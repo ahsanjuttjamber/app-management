@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +18,19 @@ use Illuminate\Support\Facades\Route;
 Route::get('/rty', function () {
     return view('welcome');
 });
+
 Route::get('/', function () {
     return view('download');
+});
+
+// Admin Auth Routes
+Route::get('/admin/login', [AuthController::class, 'showLogin']);
+Route::post('/admin/login', [AuthController::class, 'login']);
+Route::get('/admin/logout', [AuthController::class, 'logout']);
+
+// Admin Dashboard Routes (Protected)
+Route::middleware('admin.auth')->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'index']);
+    Route::post('/admin/lock/{id}', [DashboardController::class, 'lock']);
+    Route::post('/admin/unlock/{id}', [DashboardController::class, 'unlock']);
 });
