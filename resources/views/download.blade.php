@@ -40,16 +40,20 @@
             font-weight: bold;
             color: #667eea;
         }
-        .login-btn {
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .nav-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-decoration: none;
-            padding: 8px 25px;
+            padding: 8px 20px;
             border-radius: 25px;
             font-weight: 500;
             transition: transform 0.3s;
         }
-        .login-btn:hover {
+        .nav-btn:hover {
             transform: scale(1.05);
         }
 
@@ -185,7 +189,10 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="logo">🔒 Installment Lock</div>
-        <a href="/admin/login" class="login-btn">Admin Login</a>
+        <div class="nav-buttons">
+            <a href="/shop-login" class="nav-btn">Login</a>
+            <a href="/shop-signup" class="nav-btn">Signup</a>
+        </div>
     </nav>
 
     <div class="card">

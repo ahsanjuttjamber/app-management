@@ -1,54 +1,90 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\CustomerDevice;
 use App\Models\Shop;
+use App\Models\CustomerDevice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class DashboardController extends Controller
+class ShopController extends Controller
 {
-    // Show dashboard with all devices
-    public function index()
+    // Show signup form
+    public function showSignup()
     {
-        $devices = CustomerDevice::all();
-        return view('admin.dashboard', compact('devices'));
+        return view('shop_signup');
     }
 
-    // Show pending shop requests
-    public function pendingRequests()
+    // Register new shop owner
+    public function register(Request $request)
     {
-        $pendingShops = Shop::where('is_approved', false)->get();
-        return view('admin.pending_requests', compact('pendingShops'));
+        $request->validate([
+            'name' => 'required|string',
+            'shop_name' => 'required|string',
+            'address' => 'required|string',
+            'phone' => 'required|string',
+            'email' => 'required|email|unique:shops,email',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        Shop::create([
+            'name' => $request->name,
+            'shop_name' => $request->shop_name,
+            'address' => $request->address,
+            'phone' => $request->phone,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'is_approved' => false,
+        ]);
+
+        return redirect()->back()->with('success', 'Registration successful! Wait for admin approval.');
     }
 
-    // Approve shop
-    public function approveShop($id)
+    // Show login form
+    public function showLogin()
     {
-        $shop = Shop::findOrFail($id);
-        $shop->update(['is_approved' => true]);
-        return redirect()->back()->with('success', 'Shop approved successfully');
+        return view('shop_login');
     }
 
-    // Reject shop (delete)
-    public function rejectShop($id)
+    // Handle login
+    public function login(Request $request)
     {
-        $shop = Shop::findOrFail($id);
-        $shop->delete();
-        return redirect()->back()->with('success', 'Shop rejected and deleted');
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        $shop = Shop::where('email', $request->email)->first();
+
+        if ($shop && Hash::check($request->password, $shop->password)) {
+            if (!$shop->is_approved) {
+                return back()->with('error', 'Your account is pending admin approval.');
+            }
+            session(['shop_logged_in' => true, 'shop_id' => $shop->id]);
+            return redirect('/shop-dashboard');
+        }
+
+        return back()->with('error', 'Invalid credentials');
     }
 
-    // Add new device
-    public function store(Request $request)
+    // Show dashboard with shop's own devices
+    public function dashboard()
+    {
+        $shopId = session('shop_id');
+        $shop = Shop::find($shopId);
+        $devices = CustomerDevice::where('shop_id', $shopId)->get();
+        return view('shop_dashboard', compact('shop', 'devices'));
+    }
+
+    // Add device for this shop
+    public function addDevice(Request $request)
     {
         $request->validate([
             'customer_name' => 'required|string',
             'mobile_name' => 'required|string',
             'phone_number' => 'required|string',
-            'id_card_number' => 'required|string',
             'device_id' => 'required|string|unique:customer_devices,device_id'
         ]);
 
@@ -57,7 +93,7 @@ class DashboardController extends Controller
             'customer_name' => $request->customer_name,
             'phone_number' => $request->phone_number,
             'mobile_name' => $request->mobile_name,
-            'id_card_number' => $request->id_card_number,
+            'shop_id' => session('shop_id'),
             'status' => 'active',
             'lock_type' => 'soft',
             'is_blocked' => false,
@@ -72,14 +108,12 @@ class DashboardController extends Controller
     {
         $device = CustomerDevice::findOrFail($id);
 
-        // Update local database
         $device->update([
             'is_blocked' => true,
             'lock_type' => 'full',
             'status' => 'full_lock'
         ]);
 
-        // Call Railway API to lock the phone
         try {
             Http::timeout(5)->post('https://comfortable-unity-production-7a5f.up.railway.app/api/emi/admin/full-lock', [
                 'device_id' => $device->device_id
@@ -96,22 +130,16 @@ class DashboardController extends Controller
     {
         $device = CustomerDevice::findOrFail($id);
 
-        // Update local database
         $device->update([
             'is_blocked' => false,
             'status' => 'active',
             'lock_type' => 'soft'
         ]);
 
-        // Call Railway API to unlock the phone
         try {
-            $response = Http::timeout(5)->post('https://comfortable-unity-production-7a5f.up.railway.app/api/emi/admin/unblock', [
+            Http::timeout(5)->post('https://comfortable-unity-production-7a5f.up.railway.app/api/emi/admin/unblock', [
                 'device_id' => $device->device_id
             ]);
-
-            if (!$response->successful()) {
-                Log::warning('Unlock API returned: ' . $response->status());
-            }
         } catch (\Exception $e) {
             Log::error('Unlock API failed: ' . $e->getMessage());
         }
@@ -120,7 +148,7 @@ class DashboardController extends Controller
     }
 
     // Delete device
-    public function delete($id)
+    public function deleteDevice($id)
     {
         $device = CustomerDevice::findOrFail($id);
         $device->delete();
@@ -141,5 +169,12 @@ class DashboardController extends Controller
         }
 
         return response()->json(['latitude' => null, 'longitude' => null]);
+    }
+
+    // Logout
+    public function logout()
+    {
+        session()->forget(['shop_logged_in', 'shop_id']);
+        return redirect('/shop-login');
     }
 }
