@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
-    // Show dashboard with all devices
+    // Show dashboard with approved shops
     public function index()
     {
-        $devices = CustomerDevice::all();
-        return view('admin.dashboard', compact('devices'));
+        $shops = Shop::where('is_approved', true)->get();
+        return view('admin.dashboard', compact('shops'));
     }
 
     // Show pending shop requests
@@ -39,107 +39,5 @@ class DashboardController extends Controller
         $shop = Shop::findOrFail($id);
         $shop->delete();
         return redirect()->back()->with('success', 'Shop rejected and deleted');
-    }
-
-    // Add new device
-    public function store(Request $request)
-    {
-        $request->validate([
-            'customer_name' => 'required|string',
-            'mobile_name' => 'required|string',
-            'phone_number' => 'required|string',
-            'id_card_number' => 'required|string',
-            'device_id' => 'required|string|unique:customer_devices,device_id'
-        ]);
-
-        CustomerDevice::create([
-            'device_id' => $request->device_id,
-            'customer_name' => $request->customer_name,
-            'phone_number' => $request->phone_number,
-            'mobile_name' => $request->mobile_name,
-            'id_card_number' => $request->id_card_number,
-            'status' => 'active',
-            'lock_type' => 'soft',
-            'is_blocked' => false,
-            'is_fully_paid' => false,
-        ]);
-
-        return redirect()->back()->with('success', 'Device added successfully');
-    }
-
-    // Lock device
-    public function lock($id)
-    {
-        $device = CustomerDevice::findOrFail($id);
-
-        // Update local database
-        $device->update([
-            'is_blocked' => true,
-            'lock_type' => 'full',
-            'status' => 'full_lock'
-        ]);
-
-        // Call Railway API to lock the phone
-        try {
-            Http::timeout(5)->post('https://comfortable-unity-production-7a5f.up.railway.app/api/emi/admin/full-lock', [
-                'device_id' => $device->device_id
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Lock API failed: ' . $e->getMessage());
-        }
-
-        return redirect()->back()->with('success', 'Device locked successfully');
-    }
-
-    // Unlock device
-    public function unlock($id)
-    {
-        $device = CustomerDevice::findOrFail($id);
-
-        // Update local database
-        $device->update([
-            'is_blocked' => false,
-            'status' => 'active',
-            'lock_type' => 'soft'
-        ]);
-
-        // Call Railway API to unlock the phone
-        try {
-            $response = Http::timeout(5)->post('https://comfortable-unity-production-7a5f.up.railway.app/api/emi/admin/unblock', [
-                'device_id' => $device->device_id
-            ]);
-
-            if (!$response->successful()) {
-                Log::warning('Unlock API returned: ' . $response->status());
-            }
-        } catch (\Exception $e) {
-            Log::error('Unlock API failed: ' . $e->getMessage());
-        }
-
-        return redirect()->back()->with('success', 'Device unlocked successfully');
-    }
-
-    // Delete device
-    public function delete($id)
-    {
-        $device = CustomerDevice::findOrFail($id);
-        $device->delete();
-        return redirect()->back()->with('success', 'Device deleted successfully');
-    }
-
-    // Get device location
-    public function getLocation($device_id)
-    {
-        $device = CustomerDevice::where('device_id', $device_id)->first();
-
-        if ($device && $device->last_latitude && $device->last_longitude) {
-            return response()->json([
-                'latitude' => $device->last_latitude,
-                'longitude' => $device->last_longitude,
-                'last_location_at' => $device->last_location_at
-            ]);
-        }
-
-        return response()->json(['latitude' => null, 'longitude' => null]);
     }
 }
