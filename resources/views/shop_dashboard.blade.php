@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Shop Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -43,7 +45,7 @@
         }
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
@@ -54,7 +56,10 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             transition: transform 0.2s;
         }
-        .card:hover { transform: translateY(-3px); }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -69,6 +74,7 @@
             background: #f5f5f5;
             padding: 4px 8px;
             border-radius: 5px;
+            font-family: monospace;
         }
         .status-badge {
             padding: 4px 12px;
@@ -76,18 +82,35 @@
             font-size: 12px;
             font-weight: bold;
         }
-        .status-blocked { background: #ffebee; color: #dc3545; }
-        .status-active { background: #e8f5e9; color: #4CAF50; }
-        .card-info p { margin: 8px 0; color: #555; font-size: 14px; }
-        .card-info strong { width: 100px; display: inline-block; }
+        .status-blocked {
+            background: #ffebee;
+            color: #dc3545;
+        }
+        .status-active {
+            background: #e8f5e9;
+            color: #4CAF50;
+        }
+        .card-info p {
+            margin: 8px 0;
+            color: #555;
+            font-size: 14px;
+        }
+        .card-info strong {
+            color: #333;
+            width: 100px;
+            display: inline-block;
+        }
         .card-buttons {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #eee;
+            flex-wrap: wrap;
         }
-        .lock-btn, .unlock-btn, .delete-btn, .location-btn {
+        .lock-btn {
+            background: #dc3545;
+            color: white;
             padding: 8px 12px;
             border: none;
             border-radius: 5px;
@@ -95,10 +118,36 @@
             font-size: 13px;
             flex: 1;
         }
-        .lock-btn { background: #dc3545; color: white; }
-        .unlock-btn { background: #28a745; color: white; }
-        .delete-btn { background: #ffc107; color: #333; }
-        .location-btn { background: #17a2b8; color: white; }
+        .unlock-btn {
+            background: #28a745;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            flex: 1;
+        }
+        .delete-btn {
+            background: #ffc107;
+            color: #333;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            flex: 1;
+        }
+        .location-btn {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+            flex: 1;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -123,9 +172,30 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        .save-btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .cancel-btn { background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px; }
-        .success { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
         .map-container { height: 250px; background: #f0f0f0; margin: 15px 0; border-radius: 8px; }
         iframe { width: 100%; height: 100%; border: none; }
     </style>
@@ -179,6 +249,10 @@
             </div>
             @endforeach
         </div>
+
+        @if(count($devices) == 0)
+            <p style="text-align: center; margin-top: 50px;">No devices added yet. Click "Add New Device" to add.</p>
+        @endif
     </div>
 
     <!-- Add Device Modal -->
