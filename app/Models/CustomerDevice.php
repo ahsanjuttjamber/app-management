@@ -14,6 +14,8 @@ class CustomerDevice extends Model
         'customer_name',
         'phone_number',
         'status',
+        'mobile_name',
+        'shop_id',
         'lock_type',
         'is_blocked',
         'is_fully_paid',

@@ -78,30 +78,43 @@ class ShopController extends Controller
         return view('shop_dashboard', compact('shop', 'devices'));
     }
 
-    // Add device for this shop
-    public function addDevice(Request $request)
-    {
-        $request->validate([
-            'customer_name' => 'required|string',
-            'mobile_name' => 'required|string',
-            'phone_number' => 'required|string',
-            'device_id' => 'required|string|unique:customer_devices,device_id'
-        ]);
+    // Add device for this shop (FIXED: shop_id fallback)
+public function addDevice(Request $request)
+{
+    // FORM SE SHOP_ID LO (most important)
+    $shopId = $request->input('shop_id');
 
-        CustomerDevice::create([
-            'device_id' => $request->device_id,
-            'customer_name' => $request->customer_name,
-            'phone_number' => $request->phone_number,
-            'mobile_name' => $request->mobile_name,
-            'shop_id' => session('shop_id'),
-            'status' => 'active',
-            'lock_type' => 'soft',
-            'is_blocked' => false,
-            'is_fully_paid' => false,
-        ]);
-
-        return redirect()->back()->with('success', 'Device added successfully');
+    // Agar form se nahi aaya to session se lo
+    if (!$shopId) {
+        $shopId = session('shop_id');
     }
+
+    // Log for debugging
+    Log::info('Shop ID from form: ' . $request->input('shop_id'));
+    Log::info('Shop ID from session: ' . session('shop_id'));
+    Log::info('Final Shop ID: ' . $shopId);
+
+    $request->validate([
+        'customer_name' => 'required|string',
+        'mobile_name'   => 'required|string',
+        'phone_number'  => 'required|string',
+        'device_id'     => 'required|string|unique:customer_devices,device_id',
+    ]);
+
+    CustomerDevice::create([
+        'device_id'      => $request->device_id,
+        'customer_name'  => $request->customer_name,
+        'phone_number'   => $request->phone_number,
+        'mobile_name'    => $request->mobile_name,
+        'shop_id'        => $shopId,  // ✅ Yahan form se aaya hua shop_id use hoga
+        'status'         => 'active',
+        'lock_type'      => 'soft',
+        'is_blocked'     => false,
+        'is_fully_paid'  => false,
+    ]);
+
+    return redirect()->back()->with('success', 'Device added successfully');
+}
 
     // Lock device
     public function lock($id)

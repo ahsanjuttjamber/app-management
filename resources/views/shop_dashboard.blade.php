@@ -201,6 +201,11 @@
     </style>
 </head>
 <body>
+
+    <p style="background: #f0f0f0; padding: 5px 10px; border-radius: 5px; margin-bottom: 10px;">
+    <strong>Your Shop ID:</strong> {{ $shop->id }} |
+    <strong>Shop Name:</strong> {{ $shop->shop_name }}
+</p>
     <div class="container">
         <div class="header">
             <h1>🏪 {{ $shop->shop_name }} - Dashboard</h1>
@@ -265,6 +270,7 @@
                 <input type="text" name="mobile_name" placeholder="Mobile Name" required>
                 <input type="text" name="phone_number" placeholder="Phone Number" required>
                 <input type="text" name="device_id" placeholder="Phone Device ID" required>
+                <input type="hidden" name="shop_id" value="{{ $shop->id }}">
                 <button type="submit" class="save-btn">Save</button>
                 <button type="button" class="cancel-btn" onclick="closeAddModal()">Cancel</button>
             </form>
