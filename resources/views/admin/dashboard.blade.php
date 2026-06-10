@@ -84,6 +84,17 @@
             background: #e8f5e9;
             color: #4CAF50;
         }
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            margin-left: 10px;
+            color: #dc3545;
+        }
+        .delete-btn:hover {
+            color: #a71d2a;
+        }
         .card-info p {
             margin: 8px 0;
             color: #555;
@@ -122,7 +133,14 @@
             <div class="card">
                 <div class="card-header">
                     <span class="shop-name">🏪 {{ $shop->shop_name }}</span>
-                    <span class="status-badge">✓ Approved</span>
+                    <div>
+                        <span class="status-badge">✓ Approved</span>
+                        <form method="POST" action="/admin/delete-shop/{{ $shop->id }}" style="display:inline" onsubmit="return confirm('Delete this shop permanently? All devices will also be deleted.')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="delete-btn" title="Delete Shop">🗑️</button>
+                        </form>
+                    </div>
                 </div>
                 <div class="card-info">
                     <p><strong>Owner:</strong> {{ $shop->name }}</p>

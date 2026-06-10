@@ -40,4 +40,18 @@ class DashboardController extends Controller
         $shop->delete();
         return redirect()->back()->with('success', 'Shop rejected and deleted');
     }
+
+    // Delete shop owner and all their devices
+    public function deleteShop($id)
+    {
+        $shop = Shop::findOrFail($id);
+
+        // Delete all devices of this shop
+        CustomerDevice::where('shop_id', $id)->delete();
+
+        // Delete the shop
+        $shop->delete();
+
+        return redirect()->back()->with('success', 'Shop and all devices deleted successfully');
+    }
 }

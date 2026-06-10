@@ -58,3 +58,4 @@ Route::middleware('shop.auth')->group(function () {
     Route::delete('/shop/delete-device/{id}', [ShopController::class, 'deleteDevice']);
     Route::get('/shop/device-location/{device_id}', [ShopController::class, 'getLocation']);
 });
+Route::delete('/admin/delete-shop/{id}', [DashboardController::class, 'deleteShop']);
