@@ -59,3 +59,36 @@ Route::middleware('shop.auth')->group(function () {
     Route::get('/shop/device-location/{device_id}', [ShopController::class, 'getLocation']);
 });
 Route::delete('/admin/delete-shop/{id}', [DashboardController::class, 'deleteShop']);
+Route::put('/admin/toggle-shop/{id}', [DashboardController::class, 'toggleShop']);
+
+// OTP Routes
+Route::get('/otp-verify', [ShopController::class, 'showOtpForm'])->name('otp.verify.form');
+Route::post('/otp-verify', [ShopController::class, 'verifyOtp']);
+Route::get('/waiting-approval', [ShopController::class, 'waitingApproval'])->name('otp.waiting');
+Route::post('/resend-otp', [ShopController::class, 'resendOtp'])->name('resend.otp');
+Route::get('/send-test-email', function() {
+    try {
+        $email = 'cvmeetup.umar@gmail.com'; // Apna email
+        $otp = rand(100000, 999999);
+
+        Mail::send([], [], function($message) use ($email, $otp) {
+            $message->to($email)
+                    ->subject('Test Email - OTP: ' . $otp)
+                    ->from('cvmeetup.umar@gmail.com', 'Shop App')
+                    ->html("
+                        <h2>Test Email</h2>
+                        <p>Your OTP is: <strong style='font-size:24px;'>$otp</strong></p>
+                        <p>Email sending is working!</p>
+                    ");
+        });
+
+        return "✅ Email sent successfully! Check your inbox (or spam folder). OTP: " . $otp;
+
+    } catch (Exception $e) {
+        return "❌ Error: " . $e->getMessage();
+    }
+});
+Route::get('/admin/shop-devices/{id}', [DashboardController::class, 'shopDevices']);
+Route::get('/', function () {
+    return view('landing');
+});

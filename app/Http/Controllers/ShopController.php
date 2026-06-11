@@ -4,55 +4,114 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use App\Models\CustomerDevice;
+use App\Models\Otp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OtpMail;
 
 class ShopController extends Controller
 {
-    // Show signup form
     public function showSignup()
     {
         return view('shop_signup');
     }
 
-    // Register new shop owner
+    // ✅ FIXED: Ab email bhi jaayegi
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
+            'name'      => 'required|string',
             'shop_name' => 'required|string',
-            'address' => 'required|string',
-            'phone' => 'required|string',
-            'email' => 'required|email|unique:shops,email',
-            'password' => 'required|min:6|confirmed',
+            'address'   => 'required|string',
+            'phone'     => 'required|string',
+            'email'     => 'required|email|unique:shops,email',
+            'password'  => 'required|min:6|confirmed',
         ]);
 
-        Shop::create([
-            'name' => $request->name,
-            'shop_name' => $request->shop_name,
-            'address' => $request->address,
-            'phone' => $request->phone,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'is_approved' => false,
-        ]);
+        $otp = rand(100000, 999999);
 
-        return redirect()->back()->with('success', 'Registration successful! Wait for admin approval.');
+        // Shop save karo
+        $shop = new Shop();
+        $shop->name      = $request->name;
+        $shop->shop_name = $request->shop_name;
+        $shop->address   = $request->address;
+        $shop->phone     = $request->phone;
+        $shop->email     = $request->email;
+        $shop->password  = Hash::make($request->password);
+        $shop->otp       = $otp;
+        $shop->is_approved = false;
+        $shop->save();
+
+        // OTP table mein save karo
+        Otp::updateOrCreate(
+            ['email' => $request->email],
+            [
+                'otp'         => $otp,
+                'expires_at'  => now()->addMinutes(10),
+                'is_verified' => false,
+            ]
+        );
+
+        // ✅ EMAIL BHEJO
+        try {
+            Mail::to($request->email)->send(new OtpMail($otp, $request->name));
+            Log::info('OTP email sent to: ' . $request->email);
+        } catch (\Exception $e) {
+            Log::error('OTP email failed: ' . $e->getMessage());
+            // Email fail ho toh bhi aage jao — OTP database mein hai
+        }
+
+        session(['otp_email' => $request->email]);
+
+        return redirect('/otp-verify')->with('success', 'Registration successful! OTP sent to your email.');
     }
 
-    // Show login form
+    public function showOtpForm()
+    {
+        $email = session('otp_email');
+        if (!$email) {
+            return redirect('/shop-signup')->with('error', 'Please signup first');
+        }
+        return view('otp_verify', compact('email'));
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp'   => 'required|numeric'
+        ]);
+
+        $otpRecord = Otp::where('email', $request->email)
+                        ->where('otp', $request->otp)
+                        ->where('expires_at', '>', now())
+                        ->first();
+
+        if ($otpRecord) {
+            $otpRecord->update(['is_verified' => true]);
+            return redirect('/waiting-approval');
+        }
+
+        return back()->with('error', 'Invalid or expired OTP. Please try again.');
+    }
+
+    public function waitingApproval()
+    {
+        return view('waiting_approval');
+    }
+
     public function showLogin()
     {
         return view('shop_login');
     }
 
-    // Handle login
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required',
         ]);
 
@@ -69,62 +128,52 @@ class ShopController extends Controller
         return back()->with('error', 'Invalid credentials');
     }
 
-    // Show dashboard with shop's own devices
     public function dashboard()
     {
         $shopId = session('shop_id');
-        $shop = Shop::find($shopId);
+        $shop   = Shop::find($shopId);
+
+        if (!$shop->is_active) {
+            return view('shop_blocked');
+        }
+
         $devices = CustomerDevice::where('shop_id', $shopId)->get();
         return view('shop_dashboard', compact('shop', 'devices'));
     }
 
-    // Add device for this shop (FIXED: shop_id fallback)
-public function addDevice(Request $request)
-{
-    // FORM SE SHOP_ID LO (most important)
-    $shopId = $request->input('shop_id');
+    public function addDevice(Request $request)
+    {
+        $shopId = $request->input('shop_id') ?? session('shop_id');
 
-    // Agar form se nahi aaya to session se lo
-    if (!$shopId) {
-        $shopId = session('shop_id');
+        $request->validate([
+            'customer_name' => 'required|string',
+            'mobile_name'   => 'required|string',
+            'phone_number'  => 'required|string',
+            'device_id'     => 'required|string|unique:customer_devices,device_id',
+        ]);
+
+        CustomerDevice::create([
+            'device_id'     => $request->device_id,
+            'customer_name' => $request->customer_name,
+            'phone_number'  => $request->phone_number,
+            'mobile_name'   => $request->mobile_name,
+            'shop_id'       => $shopId,
+            'status'        => 'active',
+            'lock_type'     => 'soft',
+            'is_blocked'    => false,
+            'is_fully_paid' => false,
+        ]);
+
+        return redirect()->back()->with('success', 'Device added successfully');
     }
 
-    // Log for debugging
-    Log::info('Shop ID from form: ' . $request->input('shop_id'));
-    Log::info('Shop ID from session: ' . session('shop_id'));
-    Log::info('Final Shop ID: ' . $shopId);
-
-    $request->validate([
-        'customer_name' => 'required|string',
-        'mobile_name'   => 'required|string',
-        'phone_number'  => 'required|string',
-        'device_id'     => 'required|string|unique:customer_devices,device_id',
-    ]);
-
-    CustomerDevice::create([
-        'device_id'      => $request->device_id,
-        'customer_name'  => $request->customer_name,
-        'phone_number'   => $request->phone_number,
-        'mobile_name'    => $request->mobile_name,
-        'shop_id'        => $shopId,  // ✅ Yahan form se aaya hua shop_id use hoga
-        'status'         => 'active',
-        'lock_type'      => 'soft',
-        'is_blocked'     => false,
-        'is_fully_paid'  => false,
-    ]);
-
-    return redirect()->back()->with('success', 'Device added successfully');
-}
-
-    // Lock device
     public function lock($id)
     {
         $device = CustomerDevice::findOrFail($id);
-
         $device->update([
             'is_blocked' => true,
-            'lock_type' => 'full',
-            'status' => 'full_lock'
+            'lock_type'  => 'full',
+            'status'     => 'full_lock'
         ]);
 
         try {
@@ -138,15 +187,13 @@ public function addDevice(Request $request)
         return redirect()->back()->with('success', 'Device locked successfully');
     }
 
-    // Unlock device
     public function unlock($id)
     {
         $device = CustomerDevice::findOrFail($id);
-
         $device->update([
             'is_blocked' => false,
-            'status' => 'active',
-            'lock_type' => 'soft'
+            'status'     => 'active',
+            'lock_type'  => 'soft'
         ]);
 
         try {
@@ -160,34 +207,65 @@ public function addDevice(Request $request)
         return redirect()->back()->with('success', 'Device unlocked successfully');
     }
 
-    // Delete device
     public function deleteDevice($id)
     {
-        $device = CustomerDevice::findOrFail($id);
-        $device->delete();
+        CustomerDevice::findOrFail($id)->delete();
         return redirect()->back()->with('success', 'Device deleted successfully');
     }
 
-    // Get device location
     public function getLocation($device_id)
     {
         $device = CustomerDevice::where('device_id', $device_id)->first();
 
         if ($device && $device->last_latitude && $device->last_longitude) {
             return response()->json([
-                'latitude' => $device->last_latitude,
-                'longitude' => $device->last_longitude,
-                'last_location_at' => $device->last_location_at
+                'latitude'        => $device->last_latitude,
+                'longitude'       => $device->last_longitude,
+                'last_location_at'=> $device->last_location_at
             ]);
         }
 
         return response()->json(['latitude' => null, 'longitude' => null]);
     }
 
-    // Logout
     public function logout()
     {
         session()->forget(['shop_logged_in', 'shop_id']);
         return redirect('/shop-login');
+    }
+
+    // ✅ FIXED: resendOtp ab Request use karta hai (POST se email milti hai)
+    public function resendOtp(Request $request)
+    {
+        $email = $request->email ?? session('otp_email');
+
+        $shop = Shop::where('email', $email)->first();
+
+        if (!$shop) {
+            return response()->json(['success' => false, 'message' => 'Email not found']);
+        }
+
+        $otp = rand(100000, 999999);
+
+        $shop->otp = $otp;
+        $shop->save();
+
+        Otp::updateOrCreate(
+            ['email' => $email],
+            [
+                'otp'         => $otp,
+                'expires_at'  => now()->addMinutes(10),
+                'is_verified' => false,
+            ]
+        );
+
+        // ✅ EMAIL BHEJO
+        try {
+            Mail::to($email)->send(new OtpMail($otp, $shop->name));
+            return response()->json(['success' => true, 'message' => 'OTP sent successfully']);
+        } catch (\Exception $e) {
+            Log::error('Resend OTP email failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Email sending failed: ' . $e->getMessage()]);
+        }
     }
 }

@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Installment Lock App - Download</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -20,173 +15,65 @@
             align-items: center;
             padding: 20px;
         }
-
-        /* Navbar Styles */
         .navbar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
             z-index: 1000;
         }
-        .logo {
-            font-size: 20px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-        }
+        .logo { font-size: 22px; font-weight: bold; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .nav-buttons { display: flex; gap: 15px; }
         .nav-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            padding: 8px 20px;
-            border-radius: 25px;
-            font-weight: 500;
-            transition: transform 0.3s;
+            color: white; text-decoration: none; padding: 8px 22px;
+            border-radius: 25px; font-weight: 500; transition: all 0.3s ease;
         }
-        .nav-btn:hover {
-            transform: scale(1.05);
-        }
-
+        .nav-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
         .card {
-            max-width: 500px;
-            width: 100%;
-            background: white;
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            animation: fadeInUp 0.6s ease-out;
-            margin-top: 80px;
+            max-width: 500px; width: 100%; background: white; border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden;
+            animation: fadeInUp 0.6s ease-out; margin-top: 80px;
         }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px 20px;
-            text-align: center;
-            color: white;
+            padding: 40px 20px; text-align: center; color: white;
         }
-
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-            font-weight: 700;
-        }
-
-        .header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 40px 30px;
-            text-align: center;
-        }
-
-        .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-
+        .header h1 { font-size: 28px; margin-bottom: 8px; font-weight: 700; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .content { padding: 40px 30px; text-align: center; }
+        .icon { font-size: 64px; margin-bottom: 20px; }
         .features {
-            text-align: left;
-            margin: 30px 0;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 20px;
+            text-align: left; margin: 30px 0; background: #f8f9fa;
+            padding: 20px; border-radius: 20px;
         }
-
-        .features h3 {
-            margin-bottom: 15px;
-            color: #333;
-            font-size: 18px;
-        }
-
-        .features ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .features li {
-            padding: 8px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            color: #555;
-        }
-
-        .features li::before {
-            content: "✓";
-            color: #4CAF50;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
+        .features h3 { margin-bottom: 15px; color: #333; font-size: 18px; }
+        .features ul { list-style: none; padding: 0; }
+        .features li { padding: 8px 0; display: flex; align-items: center; gap: 10px; font-size: 14px; color: #555; }
+        .features li::before { content: "✓"; color: #4CAF50; font-weight: bold; font-size: 18px; }
         .download-btn {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            padding: 16px 40px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 50px;
-            margin: 20px 0 10px;
+            display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; text-decoration: none; padding: 16px 40px; font-size: 18px;
+            font-weight: 600; border-radius: 50px; margin: 20px 0 10px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 10px 20px -5px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 20px -5px rgba(102,126,234,0.4);
         }
-
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 25px -5px rgba(102, 126, 234, 0.5);
-        }
-
-        .version {
-            font-size: 12px;
-            color: #999;
-            margin-top: 20px;
-        }
-
-        .footer {
-            background: #f1f3f4;
-            padding: 15px;
-            text-align: center;
-            font-size: 11px;
-            color: #777;
-        }
-
-        .badge {
-            display: inline-block;
-            background: rgba(255,255,255,0.2);
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-size: 12px;
-            margin-top: 10px;
-        }
+        .download-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(102,126,234,0.5); }
+        .version { font-size: 12px; color: #999; margin-top: 20px; }
+        .footer { background: #f1f3f4; padding: 15px; text-align: center; font-size: 11px; color: #777; }
+        .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 50px; font-size: 12px; margin-top: 10px; }
+        @media (max-width: 600px) { .navbar { padding: 12px 20px; } .logo { font-size: 16px; } .nav-btn { padding: 6px 15px; font-size: 14px; } }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
     <nav class="navbar">
         <div class="logo">🔒 Installment Lock</div>
         <div class="nav-buttons">

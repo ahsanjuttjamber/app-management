@@ -54,4 +54,23 @@ class DashboardController extends Controller
 
         return redirect()->back()->with('success', 'Shop and all devices deleted successfully');
     }
+
+    // Toggle shop active status
+    public function toggleShop($id)
+    {
+        $shop = Shop::findOrFail($id);
+        $shop->is_active = !$shop->is_active;
+        $shop->save();
+
+        $status = $shop->is_active ? 'activated' : 'deactivated';
+        return redirect()->back()->with('success', "Shop {$status} successfully");
+    }
+
+    // Show devices for a specific shop
+    public function shopDevices($id)
+    {
+        $shop = Shop::findOrFail($id);
+        $devices = CustomerDevice::where('shop_id', $id)->get();
+        return view('admin.shop_devices', compact('shop', 'devices'));
+    }
 }
